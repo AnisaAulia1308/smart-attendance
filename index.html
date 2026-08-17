@@ -1,0 +1,3658 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Attendance IoT — Live Board</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+    html::-webkit-scrollbar {
+      display: none;
+    }
+    html {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      scroll-behavior: smooth;
+    }
+
+    :root {
+      --paper: #eef2ee;
+      --board-dark: #0b2b26;
+      --board-darker: #071f1c;
+      --amber: #d98a1f;
+      --amber-glow: rgba(217, 138, 31, 0.28);
+      --mint: #0e9e73;
+      --mint-glow: rgba(14, 158, 115, 0.22);
+      --mint-bright: #26e6a6;
+      --red: #d94f5c;
+      --ink: #0b1f1c;
+      --muted: #5c6b66;
+      --muted-soft: #8b9994;
+      --cream: #f6f3ea;
+      --line: rgba(11, 31, 28, 0.1);
+      --line-soft: rgba(11, 31, 28, 0.06);
+      --card: #ffffff;
+      --shadow-sm: 0 2px 10px rgba(11, 31, 28, 0.05);
+      --shadow-md: 0 10px 28px rgba(11, 31, 28, 0.08);
+      --shadow-lg: 0 24px 48px rgba(11, 31, 26, 0.14);
+      --radius-lg: 26px;
+      --radius-md: 18px;
+      --font-display: "Space Grotesk", sans-serif;
+      --font-body: "DM Sans", sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+    }
+
+    body.dark {
+      --paper: #071f1c;
+      --card: #0d2e28;
+      --ink: #eef2ee;
+      --muted: #a9b8b3;
+      --muted-soft: #7c8d87;
+      --line: rgba(238, 242, 238, 0.1);
+      --line-soft: rgba(238, 242, 238, 0.06);
+      --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--paper);
+      background-image: radial-gradient(rgba(14, 158, 115, 0.12) 1px, transparent 1px);
+      background-size: 26px 26px;
+      color: var(--ink);
+      overflow-x: hidden;
+      line-height: 1.5;
+      transition: background-color .35s ease, color .35s ease;
+    }
+
+    ::selection {
+      background: var(--mint-glow);
+      color: var(--ink);
+    }
+
+    .wrapper {
+      width: min(1320px, calc(100% - 48px));
+      margin: auto;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      box-shadow: var(--shadow-sm);
+      text-transform: uppercase;
+    }
+
+    .pill.mode-live {
+      color: var(--mint);
+      border-color: rgba(14, 158, 115, 0.35);
+    }
+    .pill.mode-demo {
+      color: var(--amber);
+      border-color: rgba(217, 138, 31, 0.35);
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+    }
+    button:focus-visible,
+    input:focus-visible,
+    .filter-btn:focus-visible {
+      outline: 2px solid var(--mint);
+      outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* ============ NAVBAR ============ */
+    nav {
+      height: 74px;
+      display: flex;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: color-mix(in srgb, var(--paper) 88%, transparent);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line-soft);
+      margin: 0 calc(-50vw + 50%);
+      padding: 0 calc(50vw - 50%);
+    }
+    .nav-inner {
+      width: min(1320px, calc(100% - 48px));
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.3px;
+    }
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      background: var(--board-dark);
+      color: var(--mint-bright);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 15px;
+      box-shadow: inset 0 0 0 1px rgba(38, 230, 166, 0.3);
+    }
+    .logo small {
+      display: block;
+      font-family: var(--font-mono);
+      font-weight: 500;
+      font-size: 9px;
+      color: var(--muted-soft);
+      letter-spacing: 1.2px;
+      margin-top: 2px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .icon-btn {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--ink);
+      box-shadow: var(--shadow-sm);
+      transition: all .2s ease;
+    }
+    .icon-btn:hover {
+      border-color: var(--mint);
+      color: var(--mint);
+      transform: translateY(-1px);
+    }
+    .icon-btn.on {
+      background: var(--board-dark);
+      color: var(--mint-bright);
+      border-color: var(--board-dark);
+    }
+
+    .btn-action {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 15px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: var(--shadow-sm);
+      transition: all .2s ease;
+    }
+    .btn-action:hover {
+      border-color: var(--mint);
+      color: var(--mint);
+      transform: translateY(-1px);
+    }
+
+    /* ============ HERO ============ */
+    .hero {
+      padding: 52px 0 28px;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      align-items: center;
+      gap: 48px;
+    }
+    .hero-tag {
+      color: var(--mint);
+      margin-bottom: 18px;
+    }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 4.6vw, 62px);
+      line-height: 1.06;
+      letter-spacing: -1.6px;
+      font-weight: 700;
+    }
+    .hero h1 em {
+      font-style: normal;
+      color: var(--mint);
+      text-decoration: underline;
+      text-decoration-color: var(--amber);
+      text-decoration-thickness: 3px;
+      text-underline-offset: 6px;
+    }
+    .hero-description {
+      max-width: 540px;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 15.5px;
+      line-height: 1.65;
+    }
+    .hero-cta {
+      margin-top: 26px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      background: var(--board-dark);
+      color: var(--mint-bright);
+      border: none;
+      border-radius: 999px;
+      padding: 13px 24px;
+      font-weight: 700;
+      font-size: 13.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow-md);
+      transition: transform .2s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+    }
+    .hero-hint {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted-soft);
+      letter-spacing: 0.4px;
+    }
+
+    .hardware-panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      box-shadow: var(--shadow-md);
+    }
+    .hardware-header {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--muted-soft);
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .hardware-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .hw-card {
+      background: var(--paper);
+      border: 1px solid var(--line-soft);
+      border-radius: 14px;
+      padding: 13px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: box-shadow .2s ease;
+    }
+    .hw-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .hw-name {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13.5px;
+      color: var(--ink);
+    }
+    .hw-sub {
+      font-size: 10.5px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .hw-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: var(--mint-glow);
+      color: var(--mint);
+      letter-spacing: 0.4px;
+    }
+    .hw-badge.amber {
+      background: var(--amber-glow);
+      color: var(--amber);
+    }
+    .hw-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 3px currentColor;
+      opacity: 0.9;
+    }
+
+    /* ============ CIRCUIT SECTION (signature) ============ */
+    .circuit-section {
+      margin: 8px 0 34px;
+      background: var(--board-dark);
+      border-radius: var(--radius-lg);
+      padding: 30px 30px 24px;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+    }
+    .circuit-section::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(38, 230, 166, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(38, 230, 166, 0.06) 1px, transparent 1px);
+      background-size: 34px 34px;
+      pointer-events: none;
+    }
+    .circuit-head {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .circuit-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--mint-bright);
+    }
+    .circuit-title {
+      font-family: var(--font-display);
+      font-size: 23px;
+      color: var(--cream);
+      margin-top: 6px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+    }
+    .circuit-desc {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: rgba(246, 243, 234, 0.55);
+      margin-top: 6px;
+      max-width: 480px;
+    }
+
+    .demo-controls {
+      position: relative;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn-pulse {
+      background: rgba(246, 243, 234, 0.08);
+      border: 1px solid rgba(246, 243, 234, 0.18);
+      color: var(--cream);
+      border-radius: 999px;
+      padding: 9px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: all .2s ease;
+      font-family: var(--font-mono);
+    }
+    .btn-pulse:hover {
+      background: rgba(38, 230, 166, 0.16);
+      border-color: var(--mint-bright);
+    }
+    .btn-pulse span.dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--mint-bright);
+    }
+
+    .circuit-svg-wrap {
+      position: relative;
+      margin-top: 14px;
+    }
+    .circuit-svg-wrap svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .node-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      fill: var(--cream);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+    .node-sub {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      fill: rgba(246, 243, 234, 0.45);
+    }
+    .trace-path {
+      fill: none;
+      stroke: rgba(246, 243, 234, 0.16);
+      stroke-width: 2;
+    }
+    .node-ring {
+      fill: none;
+      stroke: rgba(246, 243, 234, 0.18);
+      stroke-width: 1.5;
+    }
+    .node-core {
+      fill: rgba(246, 243, 234, 0.08);
+      stroke: rgba(246, 243, 234, 0.22);
+      stroke-width: 1.5;
+      transition: fill .25s ease, stroke .25s ease;
+    }
+    .node-core.active {
+      fill: var(--mint-bright);
+      stroke: var(--mint-bright);
+    }
+    .node-glow {
+      opacity: 0;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    .node-glow.ping {
+      animation: pingRing 0.9s ease-out;
+    }
+    @keyframes pingRing {
+      0% {
+        opacity: 0.9;
+        transform: scale(0.6);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(2.4);
+      }
+    }
+    .pulse-dot {
+      filter: drop-shadow(0 0 6px var(--mint-bright));
+    }
+
+    .circuit-legend {
+      position: relative;
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: rgba(246, 243, 234, 0.55);
+    }
+    .legend-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    /* ============ HOW IT WORKS STRIP ============ */
+    .flow-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      position: relative;
+      margin-top: 18px;
+    }
+    .flow-chip {
+      flex: 1;
+      min-width: 190px;
+      background: rgba(246, 243, 234, 0.05);
+      border: 1px solid rgba(246, 243, 234, 0.12);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+    .flow-chip b {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--cream);
+      margin-bottom: 3px;
+    }
+    .flow-chip span {
+      font-size: 11.5px;
+      color: rgba(246, 243, 234, 0.5);
+      line-height: 1.5;
+    }
+
+    /* ============ STATS ============ */
+    .stats-section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 26px 28px;
+      margin-bottom: 30px;
+      box-shadow: var(--shadow-md);
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1.3fr;
+      gap: 24px;
+      align-items: center;
+    }
+    .stat-label {
+      color: var(--muted-soft);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+    .stat-number {
+      font-family: var(--font-display);
+      font-size: 38px;
+      font-weight: 700;
+      margin-top: 4px;
+      letter-spacing: -1.2px;
+      color: var(--ink);
+    }
+    .stat-small {
+      color: var(--mint);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      margin-top: 2px;
+      font-weight: 600;
+    }
+
+    .first-card {
+      background: var(--paper);
+      border: 1px solid var(--line-soft);
+      border-radius: 16px;
+      padding: 14px 16px;
+    }
+    .first-card .stat-label {
+      margin-bottom: 6px;
+    }
+    .first-name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .first-meta {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* ============ SECTION HEADER / CONTROLS ============ */
+    .section-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 26px 0 16px;
+      flex-wrap: wrap;
+    }
+    .section-number {
+      color: var(--mint);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(22px, 2.6vw, 32px);
+      letter-spacing: -0.8px;
+      line-height: 1;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      border: 1px solid var(--line);
+      background: var(--card);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--muted);
+      transition: all .2s ease;
+    }
+    .filter-btn.active,
+    .filter-btn:hover {
+      background: var(--board-dark);
+      color: var(--mint-bright);
+      border-color: var(--board-dark);
+    }
+
+    .search-input {
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 9px 16px;
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+      width: 220px;
+      box-shadow: var(--shadow-sm);
+      transition: all .2s ease;
+    }
+    .search-input:focus {
+      border-color: var(--mint);
+      box-shadow: 0 0 0 3px var(--mint-glow);
+    }
+
+    /* ============ CHART ============ */
+    .chart-panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 22px 26px 16px;
+      box-shadow: var(--shadow-md);
+      margin-bottom: 30px;
+    }
+    .chart-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chart-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .chart-sub {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: var(--muted-soft);
+    }
+    .chart-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 130px;
+    }
+    .chart-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      height: 100%;
+      gap: 6px;
+    }
+    .chart-bar {
+      width: 100%;
+      max-width: 22px;
+      border-radius: 5px 5px 2px 2px;
+      background: linear-gradient(180deg, var(--mint-bright), var(--mint));
+      min-height: 3px;
+      transition: height .5s cubic-bezier(.16, 1, .3, 1);
+    }
+    .chart-hour {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--muted-soft);
+    }
+
+    /* ============ ATTENDANCE PANEL ============ */
+    .attendance-panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+    .panel-top {
+      padding: 16px 26px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+    }
+    .panel-top-title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .live-tag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #fff;
+      background: var(--red);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .live-tag .blink {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #fff;
+      animation: blink 1.4s infinite;
+    }
+    @keyframes blink {
+      50% {
+        opacity: 0.25;
+      }
+    }
+
+    .log-list {
+      display: flex;
+      flex-direction: column;
+    }
+    .log-item {
+      display: grid;
+      grid-template-columns: 96px 132px 1fr 110px;
+      align-items: center;
+      gap: 18px;
+      padding: 14px 26px;
+      border-bottom: 1px solid var(--line-soft);
+      transition: background .2s ease;
+      animation: slideDown .4s cubic-bezier(.16, 1, .3, 1);
+    }
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+        background: var(--mint-glow);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+        background: transparent;
+      }
+    }
+    .log-item:last-child {
+      border-bottom: none;
+    }
+    .log-item:hover {
+      background: var(--paper);
+    }
+    .log-time {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .log-method {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+    .method-icon {
+      width: 26px;
+      height: 26px;
+      background: var(--paper);
+      color: var(--mint);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      border: 1px solid var(--line);
+    }
+    .log-name {
+      font-size: 14.5px;
+      font-weight: 700;
+    }
+    .log-id {
+      color: var(--muted-soft);
+      font-size: 10.5px;
+      font-family: var(--font-mono);
+      margin-top: 2px;
+    }
+    .badge {
+      justify-self: end;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+    }
+    .badge.success {
+      background: var(--mint-glow);
+      color: var(--mint);
+      border: 1px solid rgba(14, 158, 115, 0.25);
+    }
+    .badge.failed {
+      background: rgba(217, 79, 92, 0.12);
+      color: var(--red);
+      border: 1px solid rgba(217, 79, 92, 0.25);
+    }
+
+    /* ============ USERS ============ */
+    .users-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 14px;
+      margin-bottom: 50px;
+    }
+    .user-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .user-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+    .user-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 11px;
+      background: var(--board-dark);
+      color: var(--mint-bright);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .role {
+      color: var(--mint);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      background: var(--mint-glow);
+      border-radius: 999px;
+      padding: 4px 10px;
+      text-transform: uppercase;
+    }
+    .user-name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 17px;
+      margin-top: 14px;
+    }
+    .user-meta {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 11.5px;
+      display: flex;
+      justify-content: space-between;
+      background: var(--paper);
+      padding: 6px 10px;
+      border-radius: 8px;
+    }
+    .meta strong {
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+    }
+
+    .empty {
+      padding: 38px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13.5px;
+      width: 100%;
+      font-family: var(--font-mono);
+    }
+
+    /* ============ TOAST ============ */
+    .toast {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      background: var(--board-dark);
+      color: var(--cream);
+      padding: 12px 18px;
+      border-radius: 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all .3s cubic-bezier(.16, 1, .3, 1);
+      z-index: 1000;
+      max-width: 300px;
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .toast .dotmint {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--mint-bright);
+      flex-shrink: 0;
+      box-shadow: 0 0 0 3px var(--mint-glow);
+    }
+
+    .rotating {
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin {
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ============ FOOTER ============ */
+    footer {
+      padding: 20px 0 60px;
+    }
+    .footer-box {
+      background: var(--board-dark);
+      color: var(--cream);
+      border-radius: var(--radius-lg);
+      padding: 34px 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+    }
+    .footer-info {
+      text-align: right;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: rgba(246, 243, 234, 0.55);
+      line-height: 1.7;
+    }
+
+    @media(max-width:980px) {
+      .stats-section {
+        grid-template-columns: 1fr 1fr;
+      }
+      .first-card {
+        grid-column: span 2;
+      }
+    }
+    @media(max-width:900px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding-top: 18px;
+      }
+      .stats-grid {
+        gap: 16px 0;
+      }
+      .log-item {
+        grid-template-columns: 78px 1fr 88px;
+      }
+      .log-method {
+        display: none;
+      }
+      .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+    @media(max-width:600px) {
+      .hardware-grid {
+        grid-template-columns: 1fr;
+      }
+      .stats-section {
+        grid-template-columns: 1fr 1fr;
+      }
+      .first-card {
+        grid-column: span 2;
+      }
+      .footer-box {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .footer-info {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <div class="logo">
+        <div class="logo-mark">✓</div>
+        <div>SMART ATTENDANCE IOT<small>ESP32 · RFID · FINGERPRINT</small></div>
+      </div>
+      <div class="nav-actions">
+        <span class="pill mode-demo" id="modePill">● MODE DEMO</span>
+        <button class="icon-btn" id="soundBtn" onclick="toggleSound()" title="Suara">🔈</button>
+        <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Tema Gelap/Terang">☾</button>
+        <button class="icon-btn" onclick="toggleFullscreen()" title="Mode Layar Penuh (untuk booth demo)">⛶</button>
+        <button class="btn-action" onclick="forceRefresh()" title="Sync Ulang"><span id="syncIcon">↻</span> Sync</button>
+        <button class="btn-action" onclick="exportCSV()" title="Unduh CSV">⬇ CSV</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="wrapper">
+
+    <!-- HERO -->
+    <section class="hero">
+      <div>
+        <div class="pill hero-tag">● REALTIME · SENSOR KE CLOUD</div>
+        <h1>Lihat absensi <em>mengalir hidup-hidup</em>, dari sensor ke layar.</h1>
+        <p class="hero-description">
+          Setiap tempel kartu atau sidik jari langsung terlihat berjalan lewat papan sirkuit di bawah — dari ESP32, ke Google Apps Script, sampai muncul di daftar kehadiran. Cocok dipakai demo langsung di depan siswa dan guru.
+        </p>
+        <div class="hero-cta">
+          <button class="btn-primary" onclick="simulateAttendance('RFID')">▶ Coba Simulasi Scan</button>
+          <span class="hero-hint" id="heroHint">Tidak perlu hardware — tombol ini langsung memicu animasi di bawah.</span>
+        </div>
+      </div>
+
+      <div class="hardware-panel">
+        <div class="hardware-header">
+          <span>Status Perangkat</span>
+          <span style="color: var(--mint);">● PEMANTAUAN LIVE</span>
+        </div>
+        <div class="hardware-grid" id="hwGrid">
+          <div class="hw-card">
+            <div class="hw-info"><span class="hw-name">ESP32</span><span class="hw-sub">Microcontroller</span></div>
+            <div class="hw-badge" id="hwEsp"><span class="hw-dot"></span> ONLINE</div>
+          </div>
+          <div class="hw-card">
+            <div class="hw-info"><span class="hw-name">RFID</span><span class="hw-sub">RC522 Module</span></div>
+            <div class="hw-badge" id="hwRfid"><span class="hw-dot"></span> READY</div>
+          </div>
+          <div class="hw-card">
+            <div class="hw-info"><span class="hw-name">AS608</span><span class="hw-sub">Fingerprint</span></div>
+            <div class="hw-badge" id="hwFp"><span class="hw-dot"></span> READY</div>
+          </div>
+          <div class="hw-card">
+            <div class="hw-info"><span class="hw-name">CLOUD</span><span class="hw-sub">Apps Script Sync</span></div>
+            <div class="hw-badge amber" id="hwCloud"><span class="hw-dot"></span> SIMULASI</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CIRCUIT / SIGNATURE SECTION -->
+    <section class="circuit-section">
+      <div class="circuit-head">
+        <div>
+          <div class="circuit-eyebrow">Peta Aliran Data</div>
+          <div class="circuit-title">Papan Sirkuit Absensi</div>
+          <div class="circuit-desc">Titik hijau berjalan menandakan satu absensi nyata sedang lewat — dari sensor, diproses ESP32, disinkronkan ke cloud, lalu tercatat di dashboard.</div>
+        </div>
+        <div class="demo-controls">
+          <button class="btn-pulse" onclick="simulateAttendance('RFID')"><span class="dot"></span> Simulasikan RFID</button>
+          <button class="btn-pulse" onclick="simulateAttendance('FINGERPRINT')"><span class="dot"></span> Simulasikan Fingerprint</button>
+        </div>
+      </div>
+
+      <div class="circuit-svg-wrap">
+        <svg viewBox="0 0 1200 220" id="circuitSvg" xmlns="http://www.w3.org/2000/svg">
+          <path id="pathRfid" class="trace-path" d="M110,64 C260,64 260,110 460,110 L780,110 L1080,110"></path>
+          <path id="pathFp" class="trace-path" d="M110,156 C260,156 260,110 460,110 L780,110 L1080,110"></path>
+
+          <g id="nodeRfid">
+            <circle class="node-ring" cx="110" cy="64" r="26"></circle>
+            <circle class="node-core" cx="110" cy="64" r="17"></circle>
+            <circle class="node-glow" cx="110" cy="64" r="17" fill="none" stroke="#26e6a6" stroke-width="2"></circle>
+            <text class="node-label" x="110" y="18" text-anchor="middle">RFID</text>
+            <text class="node-sub" x="110" y="106" text-anchor="middle">RC522</text>
+          </g>
+
+          <g id="nodeFp">
+            <circle class="node-ring" cx="110" cy="156" r="26"></circle>
+            <circle class="node-core" cx="110" cy="156" r="17"></circle>
+            <circle class="node-glow" cx="110" cy="156" r="17" fill="none" stroke="#26e6a6" stroke-width="2"></circle>
+            <text class="node-label" x="110" y="202" text-anchor="middle">FINGER</text>
+            <text class="node-sub" x="110" y="196" text-anchor="middle"></text>
+          </g>
+
+          <g id="nodeEsp">
+            <circle class="node-ring" cx="460" cy="110" r="30"></circle>
+            <circle class="node-core" cx="460" cy="110" r="20"></circle>
+            <circle class="node-glow" cx="460" cy="110" r="20" fill="none" stroke="#26e6a6" stroke-width="2"></circle>
+            <text class="node-label" x="460" y="60" text-anchor="middle">ESP32</text>
+            <text class="node-sub" x="460" y="156" text-anchor="middle">memproses UID</text>
+          </g>
+
+          <g id="nodeCloud">
+            <circle class="node-ring" cx="780" cy="110" r="28"></circle>
+            <circle class="node-core" cx="780" cy="110" r="18"></circle>
+            <circle class="node-glow" cx="780" cy="110" r="18" fill="none" stroke="#26e6a6" stroke-width="2"></circle>
+            <text class="node-label" x="780" y="62" text-anchor="middle">CLOUD</text>
+            <text class="node-sub" x="780" y="154" text-anchor="middle">Apps Script</text>
+          </g>
+
+          <g id="nodeDash">
+            <circle class="node-ring" cx="1080" cy="110" r="28"></circle>
+            <circle class="node-core" cx="1080" cy="110" r="18"></circle>
+            <circle class="node-glow" cx="1080" cy="110" r="18" fill="none" stroke="#26e6a6" stroke-width="2"></circle>
+            <text class="node-label" x="1080" y="62" text-anchor="middle">DASHBOARD</text>
+            <text class="node-sub" x="1080" y="154" text-anchor="middle">tercatat</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="circuit-legend">
+        <div class="legend-item"><span class="legend-dot" style="background:#26e6a6;"></span> Sinyal aktif</div>
+        <div class="legend-item"><span class="legend-dot" style="background:rgba(246,243,234,0.3);"></span> Jalur idle</div>
+        <div class="legend-item" id="lastPulseInfo">Belum ada aktivitas</div>
+      </div>
+
+      <div class="flow-strip">
+        <div class="flow-chip"><b>01 · Input</b><span>User menempelkan kartu RFID atau sidik jari ke sensor.</span></div>
+        <div class="flow-chip"><b>02 · Proses</b><span>ESP32 mencocokkan UID/biometrik secara lokal.</span></div>
+        <div class="flow-chip"><b>03 · Sync</b><span>Data dikirim via HTTP POST ke Google Apps Script.</span></div>
+        <div class="flow-chip"><b>04 · Catat</b><span>Tersimpan di Sheet, langsung tampil di dashboard ini.</span></div>
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats-section">
+      <div>
+        <div class="stat-label">Total Pengguna</div>
+        <div class="stat-number" id="totalUsers">0</div>
+        <div class="stat-small">TERDAFTAR</div>
+      </div>
+      <div>
+        <div class="stat-label">Hadir Hari Ini</div>
+        <div class="stat-number" id="totalHadir">0</div>
+        <div class="stat-small">SCAN SUKSES</div>
+      </div>
+      <div>
+        <div class="stat-label">Scan RFID</div>
+        <div class="stat-number" id="totalRFID">0</div>
+        <div class="stat-small">KARTU</div>
+      </div>
+      <div>
+        <div class="stat-label">Scan Fingerprint</div>
+        <div class="stat-number" id="totalFingerprint">0</div>
+        <div class="stat-small">BIOMETRIK</div>
+      </div>
+      <div class="first-card">
+        <div class="stat-label">Absen Pertama Hari Ini</div>
+        <div class="first-name" id="firstName">—</div>
+        <div class="first-meta" id="firstMeta">Menunggu data...</div>
+      </div>
+    </section>
+
+    <!-- CHART -->
+    <section class="chart-panel">
+      <div class="chart-top">
+        <div>
+          <div class="chart-title">Sebaran Absensi per Jam</div>
+          <div class="chart-sub">Hari ini · diperbarui otomatis</div>
+        </div>
+        <span class="pill" style="color:var(--mint); border-color:rgba(14,158,115,0.3);">06:00 — 18:00</span>
+      </div>
+      <div class="chart-bars" id="chartBars"></div>
+    </section>
+
+    <!-- LIVE LOG -->
+    <div class="section-header">
+      <div>
+        <div class="section-number">01 / REALTIME FEED</div>
+        <h2 class="section-title">Aktivitas Absensi Terbaru</h2>
+      </div>
+      <div class="filter-group">
+        <button class="filter-btn active" onclick="setLogFilter('ALL', this)">Semua</button>
+        <button class="filter-btn" onclick="setLogFilter('RFID', this)">RFID</button>
+        <button class="filter-btn" onclick="setLogFilter('FINGERPRINT', this)">Fingerprint</button>
+        <button class="filter-btn" onclick="setLogFilter('HADIR', this)">✓ Hadir</button>
+        <button class="filter-btn" onclick="setLogFilter('GAGAL', this)">✕ Gagal</button>
+      </div>
+    </div>
+
+    <section class="attendance-panel">
+      <div class="panel-top">
+        <div class="panel-top-title">Live Activity Log</div>
+        <div class="live-tag"><span class="blink"></span> LIVE SYNC</div>
+      </div>
+      <div class="log-list" id="logTable">
+        <div class="empty">Memuat aktivitas absensi...</div>
+      </div>
+    </section>
+
+    <!-- USERS -->
+    <div class="section-header">
+      <div>
+        <div class="section-number">02 / DATABASE</div>
+        <h2 class="section-title">Pengguna Terdaftar</h2>
+      </div>
+      <input type="text" id="userSearch" class="search-input" placeholder="🔍 Cari nama / RFID / Role..." oninput="renderUsers()">
+    </div>
+
+    <section class="users-grid" id="userTable">
+      <div class="empty">Memuat data pengguna...</div>
+    </section>
+
+    <footer>
+      <div class="footer-box">
+        <div class="footer-title">Smart Attendance IoT</div>
+        <div class="footer-info">
+          ESP32 · RFID RC522 · AS608 Fingerprint<br>
+          <span id="lastUpdate">Last sync —</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast">
+    <span class="dotmint"></span>
+    <span id="toastMessage">Absensi baru terdeteksi</span>
+  </div>
+
+  <script>
+    /* =========================================================
+       SMART ATTENDANCE DASHBOARD
+       LIVE + DEMO SIMULATION
+       ========================================================= */
+
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbyW1DQVm5mRYGAkh0gpYNRIAToJjDGYfez39g4-VMWkehbdBFT1Rw0daNAnlTi7be4x/exec";
+
+    const FETCH_TIMEOUT_MS = 5000;
+    const POLL_INTERVAL_MS = 3000;
+    const DEMO_INTERVAL_RANGE = [4500, 9000];
+
+    /* =========================================================
+       STATE
+       ========================================================= */
+
+    let rawLogs = [];
+    let rawUsers = [];
+
+    let currentLogFilter = "ALL";
+
+    let previousLogCount = 0;
+
+    let isFetching = false;
+
+    let mode = "demo";
+    // live = koneksi cloud aktif
+    // demo = fallback / simulasi otomatis
+
+    let soundOn = false;
+    let audioCtx = null;
+
+    let demoTimer = null;
+    let pollTimer = null;
+
+    /*
+     * Menyimpan fingerprint dari data terakhir.
+     * Ini mencegah render ulang setiap 3 detik
+     * kalau data sebenarnya tidak berubah.
+     */
+    let lastLogsSignature = "";
+    let lastUsersSignature = "";
+
+    /*
+     * Jumlah kegagalan koneksi berturut-turut.
+     * Kita tidak langsung memindahkan dashboard ke DEMO
+     * hanya karena satu request gagal.
+     */
+    let connectionFailures = 0;
+
+    const MAX_CONNECTION_FAILURES = 3;
+
+
+    /* =========================================================
+       DEMO USERS
+       ========================================================= */
+
+    const DEMO_NAMES = [{
+      nama: "Ayu Lestari",
+      role: "Siswa",
+      rfid: "A3F9C1",
+      fingerprint: "014"
+    }, {
+      nama: "Budi Santoso",
+      role: "Siswa",
+      rfid: "B821E2",
+      fingerprint: "027"
+    }, {
+      nama: "Citra Wulandari",
+      role: "Guru",
+      rfid: "C4D0A7",
+      fingerprint: "003"
+    }, {
+      nama: "Dimas Prakoso",
+      role: "Siswa",
+      rfid: "D77A19",
+      fingerprint: "041"
+    }, {
+      nama: "Eka Putri",
+      role: "Staff",
+      rfid: "E9B3F0",
+      fingerprint: "008"
+    }, {
+      nama: "Fajar Nugroho",
+      role: "Siswa",
+      rfid: "F12CDE",
+      fingerprint: "052"
+    }, {
+      nama: "Gita Ramadhani",
+      role: "Siswa",
+      rfid: "G6A8B4",
+      fingerprint: "019"
+    }, {
+      nama: "Hendra Wijaya",
+      role: "Guru",
+      rfid: "H0E5C3",
+      fingerprint: "006"
+    }];
+
+
+    /* =========================================================
+       INIT
+       ========================================================= */
+
+    async function init() {
+
+      setModePill("demo");
+
+      /*
+       * Coba koneksi LIVE terlebih dahulu.
+       */
+      const ok = await tryLiveFetch();
+
+      if (ok) {
+
+        mode = "live";
+
+        setModePill("live");
+
+        connectionFailures = 0;
+
+        scheduleNextPoll();
+
+        return;
+      }
+
+      /*
+       * Kalau API tidak bisa diakses,
+       * masuk DEMO.
+       */
+      startDemoMode();
+    }
+
+
+    /* =========================================================
+       LIVE INITIAL FETCH
+       ========================================================= */
+
+    async function tryLiveFetch() {
+
+      const controller = new AbortController();
+
+      const timer = setTimeout(
+        () => controller.abort(),
+        FETCH_TIMEOUT_MS
+      );
+
+      try {
+
+        const response = await fetch(
+          `${API_URL}?mode=get_dashboard_data`, {
+            cache: "no-store",
+            signal: controller.signal
+          }
+        );
+
+        clearTimeout(timer);
+
+        if (!response.ok) {
+          return false;
+        }
+
+        const data = await response.json();
+
+        const newUsers = Array.isArray(data.users) ?
+          data.users :
+          [];
+
+        const newLogs = Array.isArray(data.logs) ?
+          data.logs :
+          [];
+
+        rawUsers = newUsers;
+        rawLogs = newLogs;
+
+        previousLogCount = rawLogs.length;
+
+        lastLogsSignature = createSignature(rawLogs);
+        lastUsersSignature = createSignature(rawUsers);
+
+        renderAll();
+
+        updateLastSync();
+
+        return true;
+
+      } catch (error) {
+
+        clearTimeout(timer);
+
+        console.error(
+          "Initial API Error:",
+          error
+        );
+
+        return false;
+      }
+    }
+
+
+    /* =========================================================
+       LIVE POLLING
+       ========================================================= */
+
+    function scheduleNextPoll() {
+
+      clearTimeout(pollTimer);
+
+      pollTimer = setTimeout(
+        pollLiveData,
+        POLL_INTERVAL_MS
+      );
+    }
+
+
+    async function pollLiveData() {
+
+      /*
+       * Hanya polling ketika LIVE.
+       */
+      if (mode !== "live") {
+        return;
+      }
+
+      /*
+       * Mencegah request bertumpuk.
+       */
+      if (isFetching) {
+
+        scheduleNextPoll();
+
+        return;
+      }
+
+      isFetching = true;
+
+      try {
+
+        const controller = new AbortController();
+
+        const timeout = setTimeout(
+          () => controller.abort(),
+          FETCH_TIMEOUT_MS
+        );
+
+        const response = await fetch(
+          `${API_URL}?mode=get_dashboard_data`, {
+            cache: "no-store",
+            signal: controller.signal
+          }
+        );
+
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          throw new Error(
+            "HTTP " + response.status
+          );
+        }
+
+        const data = await response.json();
+
+        const newUsers = Array.isArray(data.users) ?
+          data.users :
+          [];
+
+        const newLogs = Array.isArray(data.logs) ?
+          data.logs :
+          [];
+
+
+        /* =====================================================
+           CEK PERUBAHAN DATA
+           ===================================================== */
+
+        const newLogsSignature =
+          createSignature(newLogs);
+
+        const newUsersSignature =
+          createSignature(newUsers);
+
+
+        const logsChanged =
+          newLogsSignature !== lastLogsSignature;
+
+        const usersChanged =
+          newUsersSignature !== lastUsersSignature;
+
+
+        /* =====================================================
+           RESET STATUS KONEKSI
+           ===================================================== */
+
+        connectionFailures = 0;
+
+
+        /* =====================================================
+           UPDATE USERS
+           ===================================================== */
+
+        if (usersChanged) {
+
+          rawUsers = newUsers;
+
+          lastUsersSignature =
+            newUsersSignature;
+
+          renderUsers();
+
+          renderStats();
+        }
+
+
+        /* =====================================================
+           UPDATE LOG
+           ===================================================== */
+
+        if (logsChanged) {
+
+          const oldCount =
+            previousLogCount;
+
+          rawLogs = newLogs;
+
+          lastLogsSignature =
+            newLogsSignature;
+
+
+          /*
+           * Kalau jumlah log bertambah,
+           * berarti ada absensi baru.
+           */
+          if (
+            oldCount > 0 &&
+            rawLogs.length > oldCount
+          ) {
+
+            const newest =
+              rawLogs[rawLogs.length - 1];
+
+            handleLiveAttendance(newest);
+          }
+
+
+          /*
+           * Kalau jumlah berubah karena sinkronisasi,
+           * tetap render.
+           */
+          renderLogs();
+
+          renderStats();
+
+          renderChart();
+
+          previousLogCount =
+            rawLogs.length;
+        }
+
+
+        /*
+         * Update waktu sync tanpa
+         * merender ulang seluruh halaman.
+         */
+        updateLastSync();
+
+
+      } catch (error) {
+
+        connectionFailures++;
+
+        console.error(
+          "Polling API Error:",
+          error
+        );
+
+
+        /*
+         * Jangan langsung Demo.
+         *
+         * Hanya beri notifikasi kalau
+         * koneksi gagal beberapa kali.
+         */
+        if (
+          connectionFailures >=
+          MAX_CONNECTION_FAILURES
+        ) {
+
+          showToast(
+            "⚠ Cloud belum merespons, mencoba lagi..."
+          );
+
+        }
+
+      } finally {
+
+        isFetching = false;
+
+        scheduleNextPoll();
+      }
+    }
+
+
+    /* =========================================================
+       HANDLE LIVE ATTENDANCE
+       ========================================================= */
+
+    function handleLiveAttendance(log) {
+
+      if (!log) {
+        return;
+      }
+
+      const method =
+        String(
+          log.metode || "RFID"
+        ).toUpperCase();
+
+
+      /*
+       * Suara + toast
+       */
+      onNewAttendance(log);
+
+
+      /*
+       * Animasi jalur
+       *
+       * injectLog = false
+       *
+       * Karena data sudah datang dari server.
+       * Jangan push lagi ke rawLogs.
+       */
+      spawnPulse(
+        method,
+        false
+      );
+    }
+
+
+    /* =========================================================
+       DEMO MODE
+       ========================================================= */
+
+    function startDemoMode() {
+
+      mode = "demo";
+
+      setModePill("demo");
+
+      /*
+       * Hentikan polling LIVE.
+       */
+      clearTimeout(pollTimer);
+
+      if (rawUsers.length === 0) {
+        seedDemoData();
+      }
+
+      renderAll();
+
+      scheduleDemoTick();
+    }
+
+
+    function scheduleDemoTick() {
+
+      clearTimeout(demoTimer);
+
+      const [min, max] =
+        DEMO_INTERVAL_RANGE;
+
+      const delay =
+        min +
+        Math.random() *
+        (max - min);
+
+
+      demoTimer = setTimeout(
+        () => {
+
+          if (mode === "demo") {
+
+            const method =
+              Math.random() > 0.5 ?
+              "RFID" :
+              "FINGERPRINT";
+
+            spawnPulse(
+              method,
+              true
+            );
+          }
+
+          scheduleDemoTick();
+
+        },
+        delay
+      );
+    }
+
+
+    /* =========================================================
+       DEMO DATA
+       ========================================================= */
+
+    function seedDemoData() {
+
+      rawUsers =
+        DEMO_NAMES.map(user => ({
+          ...user
+        }));
+
+      rawLogs = [];
+
+      const now =
+        new Date();
+
+
+      for (let i = 0; i < 6; i++) {
+
+        const u =
+          DEMO_NAMES[
+            Math.floor(
+              Math.random() *
+              DEMO_NAMES.length
+            )
+          ];
+
+
+        const t =
+          new Date(
+            now.getTime() -
+            (6 - i) *
+            40 *
+            60000
+          );
+
+
+        rawLogs.push({
+
+          waktu:
+            t.toISOString(),
+
+          metode:
+            Math.random() > 0.5 ?
+            "RFID" :
+            "FINGERPRINT",
+
+          nama:
+            u.nama,
+
+          id:
+            u.rfid,
+
+          status:
+            Math.random() > 0.12 ?
+            "hadir" :
+            "gagal"
+        });
+      }
+
+
+      previousLogCount =
+        rawLogs.length;
+
+
+      lastLogsSignature =
+        createSignature(rawLogs);
+
+      lastUsersSignature =
+        createSignature(rawUsers);
+    }
+
+
+    /* =========================================================
+       MODE PILL
+       ========================================================= */
+
+    function setModePill(m) {
+
+      const pill =
+        document.getElementById(
+          "modePill"
+        );
+
+      const cloud =
+        document.getElementById(
+          "hwCloud"
+        );
+
+
+      if (!pill) {
+        return;
+      }
+
+
+      if (m === "live") {
+
+        pill.textContent =
+          "● LIVE DARI HARDWARE";
+
+        pill.className =
+          "pill mode-live";
+
+
+        if (cloud) {
+
+          cloud.className =
+            "hw-badge";
+
+          cloud.innerHTML =
+            '<span class="hw-dot"></span> ONLINE';
+        }
+
+      } else {
+
+        pill.textContent =
+          "● MODE DEMO";
+
+        pill.className =
+          "pill mode-demo";
+
+
+        if (cloud) {
+
+          cloud.className =
+            "hw-badge amber";
+
+          cloud.innerHTML =
+            '<span class="hw-dot"></span> SIMULASI';
+        }
+      }
+    }
+
+
+    /* =========================================================
+       FORCE REFRESH
+       ========================================================= */
+
+    async function forceRefresh() {
+
+      const icon =
+        document.getElementById(
+          "syncIcon"
+        );
+
+      if (icon) {
+        icon.classList.add(
+          "rotating"
+        );
+      }
+
+
+      try {
+
+        if (mode === "live") {
+
+          const success =
+            await tryLiveFetch();
+
+          if (!success) {
+
+            showToast(
+              "⚠ Gagal mengambil data cloud"
+            );
+          }
+
+        } else {
+
+          renderAll();
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Refresh error:",
+          error
+        );
+
+      }
+
+
+      setTimeout(
+        () => {
+
+          if (icon) {
+            icon.classList.remove(
+              "rotating"
+            );
+          }
+
+        },
+        700
+      );
+    }
+
+
+    /* =========================================================
+       SIMULASI DARI TOMBOL
+       =========================================================
+       
+       PENTING:
+       Saat dashboard sedang LIVE,
+       tombol simulasi TIDAK mengubah mode
+       menjadi DEMO.
+
+       Dashboard tetap:
+
+       ● LIVE DARI HARDWARE
+
+       tetapi kita tetap menjalankan
+       simulasi secara lokal.
+       ========================================================= */
+
+    function simulateAttendance(method) {
+
+      method =
+        String(method)
+        .toUpperCase();
+
+
+      /*
+       * Pastikan ada user.
+       */
+      if (rawUsers.length === 0) {
+
+        rawUsers =
+          DEMO_NAMES.map(
+            user => ({ ...user })
+          );
+
+        renderUsers();
+      }
+
+
+      /*
+       * Jalankan animasi.
+       *
+       * true = tambahkan log lokal
+       */
+      spawnPulse(
+        method,
+        true
+      );
+
+
+      showToast(
+        `🧪 Simulasi ${escapeHTML(method)} dijalankan`
+      );
+    }
+
+
+    /* =========================================================
+       ATTENDANCE EVENT
+       ========================================================= */
+
+    function onNewAttendance(log) {
+
+      const method =
+        String(
+          log.metode || "RFID"
+        ).toUpperCase();
+
+
+      playBeep(
+        method === "RFID" ?
+        660 :
+        520
+      );
+
+
+      showToast(
+        `<b>${escapeHTML(
+          log.nama || "User"
+        )}</b> absen via ${escapeHTML(
+          method
+        )}`
+      );
+    }
+
+
+    /* =========================================================
+       CIRCUIT ANIMATION
+       ========================================================= */
+
+    function spawnPulse(
+      method,
+      injectLog
+    ) {
+
+      const isRfid =
+        method === "RFID";
+
+
+      const pathEl =
+        document.getElementById(
+          isRfid ?
+          "pathRfid" :
+          "pathFp"
+        );
+
+
+      const sourceNode =
+        document.getElementById(
+          isRfid ?
+          "nodeRfid" :
+          "nodeFp"
+        );
+
+
+      const svg =
+        document.getElementById(
+          "circuitSvg"
+        );
+
+
+      if (!pathEl || !sourceNode || !svg) {
+        return;
+      }
+
+
+      const ns =
+        "http://www.w3.org/2000/svg";
+
+
+      /*
+       * Ping sensor
+       */
+      pingNode(
+        sourceNode
+      );
+
+
+      /*
+       * Moving dot
+       */
+      const dot =
+        document.createElementNS(
+          ns,
+          "circle"
+        );
+
+
+      dot.setAttribute(
+        "r",
+        "6"
+      );
+
+      dot.setAttribute(
+        "fill",
+        "#26e6a6"
+      );
+
+      dot.setAttribute(
+        "class",
+        "pulse-dot"
+      );
+
+
+      const anim =
+        document.createElementNS(
+          ns,
+          "animateMotion"
+        );
+
+
+      anim.setAttribute(
+        "dur",
+        "1.8s"
+      );
+
+      anim.setAttribute(
+        "fill",
+        "freeze"
+      );
+
+
+      const mpath =
+        document.createElementNS(
+          ns,
+          "mpath"
+        );
+
+
+      mpath.setAttributeNS(
+        "http://www.w3.org/1999/xlink",
+        "href",
+        "#" + pathEl.id
+      );
+
+
+      anim.appendChild(
+        mpath
+      );
+
+      dot.appendChild(
+        anim
+      );
+
+      svg.appendChild(
+        dot
+      );
+
+
+      /*
+       * ESP32
+       */
+      setTimeout(
+        () => {
+
+          pingNode(
+            document.getElementById(
+              "nodeEsp"
+            )
+          );
+
+        },
+        480
+      );
+
+
+      /*
+       * CLOUD
+       */
+      setTimeout(
+        () => {
+
+          pingNode(
+            document.getElementById(
+              "nodeCloud"
+            )
+          );
+
+        },
+        1050
+      );
+
+
+      /*
+       * DASHBOARD
+       */
+      setTimeout(
+        () => {
+
+          pingNode(
+            document.getElementById(
+              "nodeDash"
+            )
+          );
+
+
+          if (
+            svg.contains(dot)
+          ) {
+
+            svg.removeChild(
+              dot
+            );
+          }
+
+
+          const info =
+            document.getElementById(
+              "lastPulseInfo"
+            );
+
+
+          if (info) {
+
+            info.textContent =
+              `Terakhir: ${method} · ${new Date().toLocaleTimeString(
+                "id-ID"
+              )}`;
+          }
+
+
+          /*
+           * Kalau injectLog = true,
+           * berarti ini simulasi lokal.
+           */
+          if (injectLog) {
+
+            injectDemoLog(
+              method
+            );
+          }
+
+        },
+        1800
+      );
+    }
+
+
+    /* =========================================================
+       INJECT DEMO LOG
+       ========================================================= */
+
+    function injectDemoLog(
+      method
+    ) {
+
+      const user =
+        rawUsers.length ?
+        rawUsers[
+          Math.floor(
+            Math.random() *
+            rawUsers.length
+          )
+        ] :
+        DEMO_NAMES[0];
+
+
+      const success =
+        Math.random() > 0.08;
+
+
+      const newLog = {
+
+        waktu:
+          new Date().toISOString(),
+
+        metode:
+          method,
+
+        nama:
+          user.nama ||
+          "User Demo",
+
+        id:
+          method === "RFID" ?
+          (
+            user.rfid ||
+            "-"
+          ) :
+          (
+            user.fingerprint ||
+            "-"
+          ),
+
+        status:
+          success ?
+          "hadir" :
+          "gagal"
+      };
+
+
+      rawLogs.push(
+        newLog
+      );
+
+
+      /*
+       * Jangan membiarkan log tumbuh
+       * tanpa batas.
+       */
+      if (rawLogs.length > 100) {
+
+        rawLogs =
+          rawLogs.slice(
+            -100
+          );
+      }
+
+
+      previousLogCount =
+        rawLogs.length;
+
+
+      lastLogsSignature =
+        createSignature(
+          rawLogs
+        );
+
+
+      /*
+       * Event
+       */
+      onNewAttendance(
+        newLog
+      );
+
+
+      /*
+       * Render hanya bagian
+       * yang memang diperlukan.
+       */
+      renderLogs();
+
+      renderStats();
+
+      renderChart();
+    }
+
+
+    /* =========================================================
+       PING NODE
+       ========================================================= */
+
+    function pingNode(
+      nodeGroup
+    ) {
+
+      if (!nodeGroup) {
+        return;
+      }
+
+
+      const core =
+        nodeGroup.querySelector(
+          ".node-core"
+        );
+
+
+      const glow =
+        nodeGroup.querySelector(
+          ".node-glow"
+        );
+
+
+      if (!core || !glow) {
+        return;
+      }
+
+
+      core.classList.add(
+        "active"
+      );
+
+
+      glow.classList.remove(
+        "ping"
+      );
+
+
+      void glow.offsetWidth;
+
+
+      glow.classList.add(
+        "ping"
+      );
+
+
+      setTimeout(
+        () => {
+
+          core.classList.remove(
+            "active"
+          );
+
+        },
+        500
+      );
+    }
+
+
+    /* =========================================================
+       RENDER ALL
+       ========================================================= */
+
+    function renderAll() {
+
+      renderStats();
+
+      renderUsers();
+
+      renderLogs();
+
+      renderChart();
+
+      updateLastSync();
+    }
+
+
+    /* =========================================================
+       STATS
+       ========================================================= */
+
+    function renderStats() {
+
+      let hadir = 0;
+      let rfid = 0;
+      let fingerprint = 0;
+
+
+      rawLogs.forEach(
+        log => {
+
+          const method =
+            String(
+              log.metode || ""
+            ).toUpperCase();
+
+
+          const status =
+            String(
+              log.status || ""
+            ).toLowerCase();
+
+
+          if (
+            status === "hadir"
+          ) {
+
+            hadir++;
+          }
+
+
+          if (
+            method === "RFID"
+          ) {
+
+            rfid++;
+          }
+
+
+          if (
+            method === "FINGERPRINT"
+          ) {
+
+            fingerprint++;
+          }
+        }
+      );
+
+
+      document.getElementById(
+        "totalUsers"
+      ).textContent =
+        rawUsers.length;
+
+
+      document.getElementById(
+        "totalHadir"
+      ).textContent =
+        hadir;
+
+
+      document.getElementById(
+        "totalRFID"
+      ).textContent =
+        rfid;
+
+
+      document.getElementById(
+        "totalFingerprint"
+      ).textContent =
+        fingerprint;
+
+
+      /*
+       * Absen pertama
+       */
+      const hadirLogs =
+        rawLogs.filter(
+          log =>
+          String(
+            log.status || ""
+          ).toLowerCase() ===
+          "hadir" &&
+          log.waktu
+        );
+
+
+      if (
+        hadirLogs.length
+      ) {
+
+        const sorted =
+          [...hadirLogs].sort(
+            (a, b) =>
+            new Date(a.waktu) -
+            new Date(b.waktu)
+          );
+
+
+        const first =
+          sorted[0];
+
+
+        document.getElementById(
+          "firstName"
+        ).textContent =
+          first.nama ||
+          "—";
+
+
+        document.getElementById(
+          "firstMeta"
+        ).textContent =
+          formatTime(
+            first.waktu
+          ) +
+          " · " +
+          String(
+            first.metode || ""
+          ).toUpperCase();
+
+      } else {
+
+        document.getElementById(
+          "firstName"
+        ).textContent =
+          "—";
+
+
+        document.getElementById(
+          "firstMeta"
+        ).textContent =
+          "Belum ada absensi";
+      }
+    }
+
+
+    /* =========================================================
+       USERS
+       ========================================================= */
+
+    function renderUsers() {
+
+      const container =
+        document.getElementById(
+          "userTable"
+        );
+
+
+      const searchEl =
+        document.getElementById(
+          "userSearch"
+        );
+
+
+      const query =
+        searchEl ?
+        searchEl.value
+        .toLowerCase()
+        .trim() :
+        "";
+
+
+      const filtered =
+        rawUsers.filter(
+          user => {
+
+            const name =
+              (
+                user.nama ||
+                ""
+              ).toLowerCase();
+
+
+            const rfid =
+              (
+                user.rfid ||
+                ""
+              ).toLowerCase();
+
+
+            const role =
+              (
+                user.role ||
+                ""
+              ).toLowerCase();
+
+
+            return (
+              name.includes(query) ||
+              rfid.includes(query) ||
+              role.includes(query)
+            );
+          }
+        );
+
+
+      if (
+        filtered.length === 0
+      ) {
+
+        container.innerHTML =
+          `<div class="empty">
+            Tidak ada data pengguna yang cocok.
+          </div>`;
+
+        return;
+      }
+
+
+      container.innerHTML =
+        filtered
+        .map(
+          user => {
+
+            const name =
+              user.nama ||
+              "User Baru";
+
+
+            const initial =
+              name
+              .charAt(0)
+              .toUpperCase();
+
+
+            return `
+                <div class="user-card">
+
+                  <div class="user-top">
+
+                    <div class="avatar">
+                      ${escapeHTML(initial)}
+                    </div>
+
+                    <div class="role">
+                      ${escapeHTML(
+                        user.role ||
+                        "Siswa/Staff"
+                      )}
+                    </div>
+
+                  </div>
+
+                  <div class="user-name">
+                    ${escapeHTML(name)}
+                  </div>
+
+                  <div class="user-meta">
+
+                    <div class="meta">
+                      <span>RFID</span>
+                      <strong>
+                        ${
+                          user.rfid ?
+                          escapeHTML(
+                            user.rfid
+                          ) :
+                          "—"
+                        }
+                      </strong>
+                    </div>
+
+                    <div class="meta">
+                      <span>Fingerprint</span>
+                      <strong>
+                        ID ${
+                          user.fingerprint ?
+                          escapeHTML(
+                            user.fingerprint
+                          ) :
+                          "—"
+                        }
+                      </strong>
+                    </div>
+
+                  </div>
+
+                </div>
+              `;
+          }
+        )
+        .join("");
+    }
+
+
+    /* =========================================================
+       FILTER LOG
+       ========================================================= */
+
+    function setLogFilter(
+      filter,
+      btn
+    ) {
+
+      currentLogFilter =
+        filter;
+
+
+      document
+        .querySelectorAll(
+          ".filter-btn"
+        )
+        .forEach(
+          b =>
+          b.classList.remove(
+            "active"
+          )
+        );
+
+
+      if (btn) {
+
+        btn.classList.add(
+          "active"
+        );
+      }
+
+
+      renderLogs();
+    }
+
+
+    /* =========================================================
+       RENDER LOG
+       ========================================================= */
+
+    function renderLogs() {
+
+      const container =
+        document.getElementById(
+          "logTable"
+        );
+
+
+      let filtered =
+        [...rawLogs].reverse();
+
+
+      if (
+        currentLogFilter ===
+        "RFID"
+      ) {
+
+        filtered =
+          filtered.filter(
+            log =>
+            String(
+              log.metode
+            ).toUpperCase() ===
+            "RFID"
+          );
+
+      } else if (
+        currentLogFilter ===
+        "FINGERPRINT"
+      ) {
+
+        filtered =
+          filtered.filter(
+            log =>
+            String(
+              log.metode
+            ).toUpperCase() ===
+            "FINGERPRINT"
+          );
+
+      } else if (
+        currentLogFilter ===
+        "HADIR"
+      ) {
+
+        filtered =
+          filtered.filter(
+            log =>
+            String(
+              log.status
+            ).toLowerCase() ===
+            "hadir"
+          );
+
+      } else if (
+        currentLogFilter ===
+        "GAGAL"
+      ) {
+
+        filtered =
+          filtered.filter(
+            log =>
+            String(
+              log.status
+            ).toLowerCase() !==
+            "hadir"
+          );
+      }
+
+
+      const latest =
+        filtered.slice(
+          0,
+          10
+        );
+
+
+      if (
+        latest.length === 0
+      ) {
+
+        container.innerHTML =
+          `<div class="empty">
+            Belum ada aktivitas absensi untuk kategori ini.
+          </div>`;
+
+        return;
+      }
+
+
+      container.innerHTML =
+        latest
+        .map(
+          log => {
+
+            const method =
+              String(
+                log.metode ||
+                "-"
+              ).toUpperCase();
+
+
+            const status =
+              String(
+                log.status ||
+                ""
+              ).toLowerCase();
+
+
+            const success =
+              status ===
+              "hadir";
+
+
+            const name =
+              log.nama ||
+              "Tidak Dikenal";
+
+
+            const methodIcon =
+              method === "RFID" ?
+              "RFID" :
+              "BIO";
+
+
+            return `
+                <div class="log-item">
+
+                  <div class="log-time">
+                    ${formatTime(
+                      log.waktu
+                    )}
+                  </div>
+
+                  <div class="log-method">
+
+                    <div class="method-icon">
+                      ${methodIcon}
+                    </div>
+
+                    ${escapeHTML(
+                      method
+                    )}
+
+                  </div>
+
+                  <div>
+
+                    <div class="log-name">
+                      ${escapeHTML(
+                        name
+                      )}
+                    </div>
+
+                    <div class="log-id">
+                      ID:
+                      ${escapeHTML(
+                        log.id ||
+                        "-"
+                      )}
+                    </div>
+
+                  </div>
+
+                  <div class="badge ${
+                    success ?
+                    "success" :
+                    "failed"
+                  }">
+
+                    ${
+                      success ?
+                      "✓ HADIR" :
+                      "✕ GAGAL"
+                    }
+
+                  </div>
+
+                </div>
+              `;
+          }
+        )
+        .join("");
+    }
+
+
+    /* =========================================================
+       CHART
+       ========================================================= */
+
+    function renderChart() {
+
+      const wrap =
+        document.getElementById(
+          "chartBars"
+        );
+
+
+      if (!wrap) {
+        return;
+      }
+
+
+      const hours =
+        Array.from({
+          length: 13
+        }, (_, i) =>
+          i + 6
+        );
+
+
+      const counts =
+        hours.map(
+          () => 0
+        );
+
+
+      const today =
+        new Date()
+        .toDateString();
+
+
+      rawLogs.forEach(
+        log => {
+
+          if (
+            String(
+              log.status || ""
+            ).toLowerCase() !==
+            "hadir"
+          ) {
+
+            return;
+          }
+
+
+          if (
+            !log.waktu
+          ) {
+
+            return;
+          }
+
+
+          const d =
+            new Date(
+              log.waktu
+            );
+
+
+          if (
+            isNaN(
+              d.getTime()
+            )
+          ) {
+
+            return;
+          }
+
+
+          if (
+            d.toDateString() !==
+            today
+          ) {
+
+            return;
+          }
+
+
+          const h =
+            d.getHours();
+
+
+          const idx =
+            hours.indexOf(h);
+
+
+          if (
+            idx >= 0
+          ) {
+
+            counts[idx]++;
+          }
+        }
+      );
+
+
+      const max =
+        Math.max(
+          1,
+          ...counts
+        );
+
+
+      wrap.innerHTML =
+        hours
+        .map(
+          (h, i) => {
+
+            const pct =
+              Math.round(
+                (
+                  counts[i] /
+                  max
+                ) *
+                100
+              );
+
+
+            return `
+                <div class="chart-col">
+
+                  <div
+                    class="chart-bar"
+                    style="height:${pct}%"
+                    title="${counts[i]} absen pukul ${h}:00"
+                  ></div>
+
+                  <div class="chart-hour">
+                    ${h}
+                  </div>
+
+                </div>
+              `;
+          }
+        )
+        .join("");
+    }
+
+
+    /* =========================================================
+       SIGNATURE
+       ========================================================= */
+
+    function createSignature(
+      data
+    ) {
+
+      try {
+
+        return JSON.stringify(
+          data
+        );
+
+      } catch (error) {
+
+        return String(
+          data
+        );
+      }
+    }
+
+
+    /* =========================================================
+       LAST SYNC
+       ========================================================= */
+
+    function updateLastSync() {
+
+      const el =
+        document.getElementById(
+          "lastUpdate"
+        );
+
+
+      if (!el) {
+        return;
+      }
+
+
+      el.textContent =
+        "Last sync " +
+        new Date().toLocaleTimeString(
+          "id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+          }
+        );
+    }
+
+
+    /* =========================================================
+       EXPORT CSV
+       ========================================================= */
+
+    function exportCSV() {
+
+      if (
+        rawLogs.length === 0
+      ) {
+
+        alert(
+          "Belum ada data log untuk di-export."
+        );
+
+        return;
+      }
+
+
+      let csv =
+        "Waktu,Metode,Nama,ID,Status\n";
+
+
+      rawLogs.forEach(
+        log => {
+
+          csv +=
+            `"${log.waktu || ""}",` +
+            `"${log.metode || ""}",` +
+            `"${log.nama || ""}",` +
+            `"${log.id || ""}",` +
+            `"${log.status || ""}"\n`;
+        }
+      );
+
+
+      const blob =
+        new Blob(
+          [csv], {
+            type:
+              "text/csv;charset=utf-8;"
+          }
+        );
+
+
+      const url =
+        URL.createObjectURL(
+          blob
+        );
+
+
+      const link =
+        document.createElement(
+          "a"
+        );
+
+
+      link.setAttribute(
+        "href",
+        url
+      );
+
+
+      link.setAttribute(
+        "download",
+        `Attendance_Log_${new Date()
+          .toISOString()
+          .slice(0, 10)}.csv`
+      );
+
+
+      document.body.appendChild(
+        link
+      );
+
+
+      link.click();
+
+
+      document.body.removeChild(
+        link
+      );
+
+
+      URL.revokeObjectURL(
+        url
+      );
+    }
+
+
+    /* =========================================================
+       TOAST
+       ========================================================= */
+
+    function showToast(
+      message
+    ) {
+
+      const toast =
+        document.getElementById(
+          "toast"
+        );
+
+
+      const messageEl =
+        document.getElementById(
+          "toastMessage"
+        );
+
+
+      if (!toast || !messageEl) {
+        return;
+      }
+
+
+      messageEl.innerHTML =
+        message;
+
+
+      toast.classList.add(
+        "show"
+      );
+
+
+      clearTimeout(
+        showToast._t
+      );
+
+
+      showToast._t =
+        setTimeout(
+          () => {
+
+            toast.classList.remove(
+              "show"
+            );
+
+          },
+          3800
+        );
+    }
+
+
+    /* =========================================================
+       SOUND
+       ========================================================= */
+
+    function toggleSound() {
+
+      soundOn =
+        !soundOn;
+
+
+      const btn =
+        document.getElementById(
+          "soundBtn"
+        );
+
+
+      if (btn) {
+
+        btn.textContent =
+          soundOn ?
+          "🔊" :
+          "🔈";
+
+
+        btn.classList.toggle(
+          "on",
+          soundOn
+        );
+      }
+
+
+      if (
+        soundOn &&
+        !audioCtx
+      ) {
+
+        try {
+
+          audioCtx =
+            new(
+              window.AudioContext ||
+              window.webkitAudioContext
+            )();
+
+        } catch (error) {
+
+          console.error(
+            "Audio error:",
+            error
+          );
+        }
+      }
+
+
+      if (soundOn) {
+
+        playBeep(
+          700
+        );
+      }
+    }
+
+
+    function playBeep(
+      freq
+    ) {
+
+      if (
+        !soundOn ||
+        !audioCtx
+      ) {
+
+        return;
+      }
+
+
+      try {
+
+        const osc =
+          audioCtx.createOscillator();
+
+
+        const gain =
+          audioCtx.createGain();
+
+
+        osc.type =
+          "sine";
+
+
+        osc.frequency.value =
+          freq;
+
+
+        gain.gain.setValueAtTime(
+          0.001,
+          audioCtx.currentTime
+        );
+
+
+        gain.gain.exponentialRampToValueAtTime(
+          0.12,
+          audioCtx.currentTime +
+          0.02
+        );
+
+
+        gain.gain.exponentialRampToValueAtTime(
+          0.001,
+          audioCtx.currentTime +
+          0.28
+        );
+
+
+        osc
+          .connect(gain)
+          .connect(
+            audioCtx.destination
+          );
+
+
+        osc.start();
+
+
+        osc.stop(
+          audioCtx.currentTime +
+          0.3
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Beep error:",
+          error
+        );
+      }
+    }
+
+
+    /* =========================================================
+       THEME
+       ========================================================= */
+
+    function toggleTheme() {
+
+      document.body.classList.toggle(
+        "dark"
+      );
+
+
+      const btn =
+        document.getElementById(
+          "themeBtn"
+        );
+
+
+      if (btn) {
+
+        btn.textContent =
+          document.body.classList.contains(
+            "dark"
+          ) ?
+          "☀" :
+          "☾";
+      }
+    }
+
+
+    /* =========================================================
+       FULLSCREEN
+       ========================================================= */
+
+    function toggleFullscreen() {
+
+      if (
+        !document.fullscreenElement
+      ) {
+
+        document.documentElement
+          .requestFullscreen()
+          .catch(
+            () => {}
+          );
+
+      } else {
+
+        document
+          .exitFullscreen()
+          .catch(
+            () => {}
+          );
+      }
+    }
+
+
+    /* =========================================================
+       FORMAT TIME
+       ========================================================= */
+
+    function formatTime(
+      value
+    ) {
+
+      if (!value) {
+        return "--:--";
+      }
+
+
+      const date =
+        new Date(
+          value
+        );
+
+
+      if (
+        isNaN(
+          date.getTime()
+        )
+      ) {
+
+        return value;
+      }
+
+
+      return date.toLocaleTimeString(
+        "id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        }
+      );
+    }
+
+
+    /* =========================================================
+       ESCAPE HTML
+       ========================================================= */
+
+    function escapeHTML(
+      value
+    ) {
+
+      return String(
+        value
+      )
+        .replace(
+          /&/g,
+          "&amp;"
+        )
+        .replace(
+          /</g,
+          "&lt;"
+        )
+        .replace(
+          />/g,
+          "&gt;"
+        )
+        .replace(
+          /"/g,
+          "&quot;"
+        )
+        .replace(
+          /'/g,
+          "&#039;"
+        );
+    }
+
+
+    /* =========================================================
+       START
+       ========================================================= */
+
+    init();
+
+
+    /* =========================================================
+       TAMBAHAN: SINKRONISASI MOBILE & VISIBILITY
+       ========================================================= */
+
+    (function() {
+      // 1. Deteksi perangkat mobile
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+      if (isMobile) {
+        document.body.classList.add('mobile');
+        // (opsional) kita bisa tambahkan styling khusus untuk mobile di CSS nanti
+      }
+
+      // 2. Sinkronisasi otomatis saat kembali ke tab (visibility change)
+      document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+          // Panggil forceRefresh agar data selalu terbaru ketika pengguna kembali
+          forceRefresh();
+          // Tampilkan toast ringan sebagai indikasi
+          showToast('🔄 Sinkronisasi ulang data...');
+        }
+      });
+    })();
+  </script>
+
+</body>
+
+</html>
+```
